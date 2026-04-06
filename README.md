@@ -13,17 +13,6 @@ Without that, the guest has no reliable process reaper, no clean signal forwardi
 no safe place to perform minimal boot initialization before the workload starts.
 `scoutd` fills that gap with a tiny static binary designed for dense microVM workloads.
 
-## Why Zig
-
-`scoutd` runs inside every guest, so its footprint matters.
-Zig is a strong fit for this kind of software because it gives us:
-
-- a very small static binary
-- direct control over Linux syscalls
-- no runtime garbage collector
-- deterministic startup behavior
-- explicit memory management in early boot code
-  This is the kind of software where small, boring, and predictable wins.
 
 ## What scoutd is responsible for
 
