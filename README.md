@@ -1,25 +1,143 @@
-# scoutd 🛰️
+# scoutd
 
-`scoutd` is the dedicated guest agent and PID 1 supervisor for SpaceScale Firecracker microVMs.
+`scoutd` is the guest side PID 1 and workload launcher for SpaceScale Firecracker microVMs.
 
-In a bare-metal hyperscaler environment, Firecracker provides the hardware boundary, but the guest OS still requires a reliable supervisor to handle initialization, secret injection, and process reaping. `scoutd` is deployed directly into the customer's `ext4` root filesystem to bridge the gap between the isolated VM and the host control plane.
+Firecracker gives SpaceScale the hardware boundary. `scoutd` gives the guest a tiny, reliable init process that can boot the workload cleanly inside that boundary.
 
-## Why Zig?
-SpaceScale workloads demand extreme density. A standard Go GC Runtime requires 5MB+ of memory overhead just to boot. Hypervisors footprint must be mathematically invisible. Written in Zig, `scoutd` is statically compiled against `musl`, resulting in a microscopic binary (< 500KB) with zero runtime GC overhead, deterministic memory allocation, and sub-millisecond execution times. 
+The host daemon `scaled` owns host preflight, scheduling, asset management, and Firecracker control. `scoutd` owns only the guest boot path inside the microVM.
 
-## Core Architecture (PID 1)
-When Firecracker boots the Linux kernel, `scoutd` is the first process executed. It guarantees the safe execution of customer payloads by handling:
+## Why Zig
 
-1. **System Initialization:** Mounts essential virtual filesystems (`/proc`, `/sys`, `/dev`).
-2. **Network Bring-Up:** Activates `eth0` and configures routing based on host-provided boot arguments.
-3. **MMDS Integration:** Interfaces with the Firecracker Microvm Metadata Service (`169.254.169.254`) to securely fetch and inject encrypted customer environment variables.
-4. **Payload Ignition:** Safely executes the customer's application via `fork()` and `execve()`.
-5. **Process Supervision (The Reaper):** Operates as the absolute PID 1 zombie reaper, catching crashing sub-processes to prevent VM memory leaks.
-6. **Telemetry & Log Shipping:** Intercepts `stdout`/`stderr` from the customer payload and pipes it over the Firecracker serial console (or vsock) back to the `scaled` host daemon.
+`scoutd` runs inside every guest. It must be extremely small, deterministic, and easy to reason about as PID 1.
 
-*(Future Scope: In-memory snapshot coordination and rapid restore signaling for sub-50ms cold starts).*
+Zig is a good fit because it gives us:
 
+- a tiny static binary
+- no GC runtime overhead
+- direct Linux syscall level control
+- predictable startup behavior
+- explicit memory management for init code
+
+## Role in the architecture
+
+The current SpaceScale direction is:
+
+- `scalecp` resolves product plans into one concrete `MicroVMShape`
+- `scaled` owns host preflight, node capacity, and launch orchestration
+- `scoutd` boots inside the guest and starts the customer payload
+
+`scoutd` should stay boring. It is not a second control plane. It is not a full guest agent. It is a very small init and launcher.
+
+## Boot contract
+
+`scoutd` should read two classes of boot data.
+
+### Kernel cmdline
+
+Kernel cmdline is only for minimal early boot data that must exist before the guest can talk to anything else.
+
+That includes:
+
+- enough network bootstrap data to bring up `eth0`
+- `init=/scoutd` or equivalent init handoff
+
+Kernel cmdline must not carry secrets or the full workload configuration.
+
+### MMDS
+
+After basic guest networking is up, `scoutd` should fetch the real runtime payload from Firecracker MMDS.
+
+That payload should carry the workload metadata needed to start the customer process.
+
+Examples:
+
+- `microvm_id`
+- command
+- args
+- environment variables
+- working directory
+- runtime port
+
+This keeps early boot bootstrap small and keeps the richer runtime contract out of the kernel command line.
+
+## First production scope
+
+The first real version of `scoutd` should do only this:
+
+1. mount the minimal virtual filesystems needed by userspace
+2. read kernel cmdline bootstrap values
+3. bring up `eth0`
+4. fetch MMDS runtime metadata
+5. fork and exec the customer workload
+6. act as PID 1 and reap zombies
+7. forward signals to the workload process group
+8. exit with the workload status
+
+That is enough to make the guest boot path real.
+
+## Out of scope for the first cut
+
+These things are valid later, but they should not bloat the first version:
+
+- guest side snapshot coordination
+- complex multi process supervision
+- service management inside the guest
+- rich guest telemetry agents
+- long lived vsock RPC protocols
+
+## About vsock
+
+SpaceScale may use vsock later for richer host guest communication such as logs, health, and control. `scoutd` should be designed so a vsock transport can be added later without changing its core PID 1 behavior.
+
+The first version does not need vsock to boot a workload correctly.
+
+## Roadmap
+
+The roadmap for `scoutd` is intentionally staged so the guest contract stays small and correct.
+
+### Phase 1
+
+Build the minimal PID 1.
+
+- mount the required virtual filesystems
+- parse kernel cmdline bootstrap data
+- bring up guest networking
+- fork and exec the workload
+- reap zombies
+- forward signals
+
+### Phase 2
+
+Fetch runtime metadata from MMDS.
+
+- fetch workload command and args
+- fetch environment variables
+- fetch runtime port and guest identity
+- start the workload from MMDS supplied metadata
+
+### Phase 3
+
+Add a richer host and guest transport.
+
+- vsock for logs
+- vsock for health and status
+- vsock for later control messages
+
+### Phase 4
+
+Add later guest features only when the platform actually needs them.
+
+- snapshot coordination
+- restore hooks
+- richer telemetry
+- more advanced lifecycle control
+
+## Build
+
+Current local build command:
 
 ```bash
-# Build a static release binary for x86_64 Firecracker guests
-zig build-exe src/main.zig -O ReleaseSmall -target x86_64-linux-musl
+zig build-exe main.zig -O ReleaseSmall -target x86_64-linux-musl
+```
+
+This repository is still an early stub. The first implementation milestone is to lock the guest boot contract and build a minimal PID 1 that can reliably launch one workload process inside a Firecracker guest.
