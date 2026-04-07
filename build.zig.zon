@@ -1,0 +1,15 @@
+.{
+    .name = .scoutd,
+    .version = "0.1.0",
+    .minimum_zig_version = "0.15.0",
+    .fingerprint = 0xd215870c6a73bb2f,
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "README.md",
+        "LICENSE",
+        ".gitignore",
+    },
+}

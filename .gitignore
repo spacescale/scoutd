@@ -1,4 +1,24 @@
+# Zig
 .zig-cache/
+zig-cache/
 zig-out/
 *.o
-.idea
+
+# Executables
+scoutd
+scoutd.debug
+
+# Firecracker & VM Artifacts
+*.ext4
+*.img
+*.rootfs
+vmlinux*
+*.log
+*.sock
+
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
