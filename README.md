@@ -33,5 +33,5 @@ no safe place to perform minimal boot initialization before the workload starts.
 Current local build command:
 
 ```bash
-zig build-exe main.zig -O ReleaseSmall -target x86_64-linux-musl
+zig build
 ```
