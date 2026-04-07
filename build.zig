@@ -49,17 +49,10 @@ pub fn build(b: *std.Build) !void {
     const run_step = b.step("run", "Run scoutd");
     run_step.dependOn(&run_cmd.step);
 
-    // Create a separate module specifically for running unit tests.
-    const test_module = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
 
     // Instruct the compiler to find and prepare the test blocks in our code.
     const unit_tests = b.addTest(.{
-        .root_module = test_module,
+        .root_module = root_module,
     });
 
     // Create an action to execute the compiled tests.
