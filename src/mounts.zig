@@ -113,7 +113,7 @@ const essential_mounts = [_]MountSpec{
     // We call the raw 'mkdir' system call directly.
     // 0o755: Octal permissions (drwxr-xr-x). Owner can R/W/X, others can R/X.
     // linux.errno: Converts the raw syscall return integer into a human-readable Enum.
-       switch (linux.errno(linux.mkdir(path, 0o755))) {
+       switch (std.posix.errno(linux.mkdir(path.ptr, 0o755))) {
            .SUCCESS => {},
            .EXIST => {},
            else => |err| return errnoToError(err),
@@ -135,9 +135,9 @@ fn mountOne(spec: MountSpec) !void {
     const fstype_ptr = if (spec.fstype) |v| v.ptr else null;
     const data_ptr = if (spec.data) |v| @intFromPtr(v.ptr) else 0;
 
-    switch (linux.errno(linux.mount(
+    switch (std.posix.errno(linux.mount(
         source_ptr,
-        spec.dir,
+        spec.dir.ptr,
         fstype_ptr,
         spec.flags,
         data_ptr,

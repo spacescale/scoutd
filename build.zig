@@ -50,15 +50,34 @@ pub fn build(b: *std.Build) !void {
     run_step.dependOn(&run_cmd.step);
 
 
-    // Instruct the compiler to find and prepare the test blocks in our code.
+    const host_test_module = b.createModule(.{
+        .root_source_file = b.path("src/main.zig"),
+        .target = b.graph.host,
+        .optimize = .Debug,
+        .single_threaded = true,
+    });
+
     const unit_tests = b.addTest(.{
-        .root_module = root_module,
+        .root_module = host_test_module,
     });
 
     // Create an action to execute the compiled tests.
     const run_unit_tests = b.addRunArtifact(unit_tests);
 
-    // Register the test command so we can type zig build test.
-    const test_step = b.step("test", "Run unit tests");
+    const test_step = b.step("test", "Run unit tests on the host");
     test_step.dependOn(&run_unit_tests.step);
+
+    const guest_test_module = b.createModule(.{
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+
+    const guest_tests = b.addTest(.{
+        .root_module = guest_test_module,
+    });
+
+    const check_guest_step = b.step("check-guest", "Compile tests for the guest target");
+    check_guest_step.dependOn(&guest_tests.step);
 }

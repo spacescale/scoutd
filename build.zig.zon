@@ -1,7 +1,7 @@
 .{
     .name = .scoutd,
     .version = "0.1.0",
-    .minimum_zig_version = "0.15.0",
+    .minimum_zig_version = "0.15.2",
     .fingerprint = 0xd215870c6a73bb2f,
     .dependencies = .{},
     .paths = .{

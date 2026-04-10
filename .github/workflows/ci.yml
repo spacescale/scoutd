@@ -22,6 +22,8 @@ jobs:
 
       - name: Setup Zig
         uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.2
 
       - name: Show Zig version
         run: zig version
@@ -31,3 +33,6 @@ jobs:
 
       - name: Run tests
         run: zig build test
+
+      - name: Check guest target
+        run: zig build check-guest

@@ -12,7 +12,7 @@ pub fn idleLoop() !void {
         // -1: Wait for ANY child.
         // &status: Pointer to our local buffer where the kernel writes the exit status.
         // 0: Block (sleep) until a child dies.
-        switch (linux.errno(linux.waitpid(-1, &status, 0))) {
+        switch (std.posix.errno(linux.waitpid(-1, &status, 0))) {
             // Case 1: A child was successfully reaped.
             .SUCCESS => {},
 
