@@ -3,17 +3,11 @@
 const std = @import("std");
 const linux = std.os.linux;
 
-/// Custom panic implementation to handle system-wide crashes gracefully.
-   const panic_impl = @import("panic.zig");
+const panic_impl = @import("panic.zig");
+const mounts = @import("mounts.zig");
+const reaper = @import("reaper.zig");
+const power = @import("power.zig");
 
-/// Handles mounting and unmounting of local and network filesystems.
-   const mounts = @import("mounts.zig");
-
-/// Responsible for reaping "zombie" child processes in the PID 1 namespace.
-   const reaper = @import("reaper.zig");
-
-/// Manages system power states (shutdown, reboot, suspend).
-   const power = @import("power.zig");
 
 pub fn main() !void {
     // Check if we are running as the init process (PID 1).
@@ -21,12 +15,10 @@ pub fn main() !void {
     // In a container or a real Linux system, PID 1 has special responsibilities
     // like reaping orphan processes and managing system initialization.
     if (linux.getpid() != 1) {
-        return error.MustRunasPid1;
+        return error.MustRunAsPid1;
     }
 
-    try mounts.moundEssential();
-    // Issue 2 stops here on purpose.
-    // We are proving the PID 1 foundation before networking or MMDS.
+    try mounts.mountEssential();
     try reaper.idleLoop();
 
 }
