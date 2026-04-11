@@ -107,7 +107,7 @@ const essential_mounts = [_]MountSpec{
 pub fn mountEssential() !void {
     // We use 'inline for' to iterate over our static 'essential_mounts' array.
     // This is "Comptime Expansion": the compiler copy-pastes the body of this loop
-    // 4 times into the final binary. This removes the "Jump" and "Counter" overhead
+    // 7 times into the final binary. This removes the "Jump" and "Counter" overhead
     // of a normal loop, making our boot process as fast as possible.
     inline for (essential_mounts) |spec| {
         // 1. Prepare the mount point.

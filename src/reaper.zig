@@ -123,10 +123,6 @@ fn handleSignal(signo: u6) void {
 /// - `-1` means "reap any child"
 /// - `WNOHANG` means "do not block if none are ready right now"
 ///
-/// The raw `waitpid` return value matters more than `errno` here:
-/// - `> 0` means one child was reaped, so loop and try again
-/// - `0` means no exited children are waiting right now, so stop draining
-/// - `-1` means an error, and only then do we inspect `errno`
 fn reapChildren() void {
     while (true) {
         // The kernel writes the child's exit status into this variable when a child is reaped.
@@ -134,22 +130,15 @@ fn reapChildren() void {
         var status: u32 = 0;
         const rc = linux.waitpid(-1, &status, linux.W.NOHANG);
 
-        // We successfully reaped one child. Keep looping because there may be more zombies queued.
-        if (rc > 0) {
-            continue;
-        }
-
-        // No more exited children are ready right now.
-        // This is the normal non-blocking stopping condition for this drain pass.
-        if (rc == 0) {
-            return;
-        }
-
-        // Only a negative return is an error case.
-        // `ECHILD` means we currently have no children at all.
-        // `EINTR` means the syscall was interrupted, so just retry.
-        // Any other error ends this drain pass; the next signal will wake us again.
         switch (std.posix.errno(rc)) {
+            .SUCCESS => {
+                // rc == 0 means: no exited children are ready right now.
+                if (rc == 0) {
+                    return;
+                }
+                // Otherwise rc is the PID of a child we successfully reaped.
+                continue;
+            },
             .CHILD => return,
             .INTR => continue,
             else => return,

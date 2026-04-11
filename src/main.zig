@@ -18,7 +18,7 @@ pub fn main() !void {
     reaper.supervise();
 }
 
-pub fn  panic(msg: []const u8, st: ?*std.builtin.StackTrace, addr: ?usize) noreturn {
+pub fn panic(msg: []const u8, st: ?*std.builtin.StackTrace, addr: ?usize) noreturn {
     panic_impl.panic(msg, st, addr);
 }
 
