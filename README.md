@@ -1,10 +1,8 @@
 # scoutd
 
-`scoutd` is a tiny guest side init and workload launcher for Firecracker microVMs.
+`scoutd` is a tiny guest side init and workload launcher for Our microVMs.
 It runs as PID 1 inside the guest and exists for one reason: boot the workload cleanly, supervise it correctly, and shut
 the guest down deterministically.
-This repository is intentionally narrow. `scoutd` is not a general purpose init system, not a config management agent,
-and not a second control plane. It is a small, production focused guest runtime component.
 
 ## Why this exists
 
