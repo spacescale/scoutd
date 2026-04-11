@@ -76,10 +76,18 @@ fn blockHandledSignals() linux.sigset_t {
 fn waitForSignal(set: *const linux.sigset_t) u6 {
     while (true) {
         var info = std.mem.zeroes(linux.siginfo_t);
-        const rc = linux.sigwaitinfo(set, &info); // return code from linux not more than 63
+        const rc = linux.syscall4(
+
+            .rt_sigtimedwait, // The syscall ID. It tells the kernel to suspend the thread until one of the signals in 'set' is delivered.
+            @intFromPtr(set), // Because raw syscalls only accept integer registers, you must cast the pointer to a memory address integer.
+            @intFromPtr(&info), // When a signal is caught, the kernel writes the metadata (who sent it, why, etc.) into this struct.
+            0, // null timeout => wait forever
+            linux.NSIG / 8 // The kernel needs to know exactly how large the bitmask is.
+
+        );
 
         // On success, the kernel returns the signal number directly.
-        if (rc >= 0) {
+       if (std.posix.errno(rc) == .SUCCESS) {
             return @intCast(rc);
         }
 
