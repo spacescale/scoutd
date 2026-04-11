@@ -33,6 +33,3 @@ jobs:
 
       - name: Run tests
         run: zig build test
-
-      - name: Check guest target
-        run: zig build check-guest

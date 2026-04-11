@@ -10,17 +10,12 @@ const power = @import("power.zig");
 
 
 pub fn main() !void {
-    // Check if we are running as the init process (PID 1).
-    // The getpid() system call returns the Process ID of the current process.
-    // In a container or a real Linux system, PID 1 has special responsibilities
-    // like reaping orphan processes and managing system initialization.
     if (linux.getpid() != 1) {
         return error.MustRunAsPid1;
     }
 
     try mounts.mountEssential();
-    try reaper.idleLoop();
-
+    reaper.supervise();
 }
 
 pub fn  panic(msg: []const u8, st: ?*std.builtin.StackTrace, addr: ?usize) noreturn {

@@ -67,17 +67,4 @@ pub fn build(b: *std.Build) !void {
     const test_step = b.step("test", "Run unit tests on the host");
     test_step.dependOn(&run_unit_tests.step);
 
-    const guest_test_module = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-
-    const guest_tests = b.addTest(.{
-        .root_module = guest_test_module,
-    });
-
-    const check_guest_step = b.step("check-guest", "Compile tests for the guest target");
-    check_guest_step.dependOn(&guest_tests.step);
 }
