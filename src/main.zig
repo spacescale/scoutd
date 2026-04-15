@@ -3,10 +3,12 @@
 const std = @import("std");
 const linux = std.os.linux;
 
+
 const panic_impl = @import("panic.zig");
 const mounts = @import("mounts.zig");
 const reaper = @import("reaper.zig");
 const power = @import("power.zig");
+const cmdline = @import("cmdline.zig");
 
 
 pub fn main() !void {
@@ -15,6 +17,8 @@ pub fn main() !void {
     }
 
     try mounts.mountEssential();
+    const bootstrap = cmdline.readBootstrap() catch @panic("scoutd: fatal cmdline bootstrap error");
+    _ = bootstrap;
     reaper.supervise();
 }
 
@@ -30,4 +34,6 @@ test {
     _ = mounts;
     _ = reaper;
     _ = power;
+    _ = cmdline;
 }
+
