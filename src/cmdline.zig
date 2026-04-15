@@ -104,20 +104,17 @@ pub fn parse(raw: []const u8) ParseError!Bootstrap {
     var mmds: ?[4]u8 = null;
 
     //  The Tokenizer
-    // std.mem.splitScalar creates an "Iterator" that will walk through the 'raw'
-    // string and give us one "word" at a time, splitting by the space character.
-    var tokens = std.mem.splitScalar(u8, trimmed, ' ');
+    // std.mem.tokenizeAny skips repeated whitespace for us, so we only see real
+    // tokens and do not need a separate empty-token check in the loop.
+    var tokens = std.mem.tokenizeAny(u8, trimmed, " \n\r\t");
 
     // 'while (tokens.next()) |token|' says: "Give me the next word. If there are
     // no more words, stop." This is the most efficient way to loop over text.
     while (tokens.next()) |token| {
-        // Safety Check: Ignore any empty "words" caused by double spaces.
-        if (token.len == 0) continue;
-
         //  Split Key from Value
         // We look for the '=' sign. If it's not there, this isn't a key-value
         // pair, so we ignore it ('orelse continue').
-        const eq_index = std.mem.indexOf(u8, token, "=") orelse continue;
+        const eq_index = std.mem.indexOfScalar(u8, token, '=') orelse continue;
         const key = token[0..eq_index]; // The text before '='
         const value = token[eq_index + 1 ..]; // The text after '='
 
