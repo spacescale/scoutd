@@ -15,4 +15,4 @@ zig build
 
 ## Contributing
 
-if anything looks like bug, or you just want to assist. Feel free to open an issue or submit a PR
+ Feel free to open an issue or submit a PR
