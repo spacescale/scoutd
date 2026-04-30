@@ -24,8 +24,7 @@ pub const MountSpec = struct {
     data: ?[:0]const u8 = null,
 };
 
-/// The 'Essential Six': The minimal virtual filesystem roster required for a
-/// high-performance, multi-tenant Linux environment.
+/// The default virtual filesystem roster required for a useful app guest.
 ///
 /// In a Firecracker microVM, these mounts serve as the primary interface
 /// between the guest's isolated memory and the host's physical hardware.
@@ -68,6 +67,15 @@ const essential_mounts = [_]MountSpec{
         .flags = linux.MS.NOSUID | linux.MS.NOEXEC,
         .data = "mode=620,ptmxmode=666",
     },
+    // Role: Exposes POSIX message queues through the standard Linux path.
+    // Critical for: Compatibility with C/C++ services, brokers, databases,
+    // and older libraries that use mq_open/mq_send/mq_receive for local IPC.
+    .{
+        .dir = "/dev/mqueue",
+        .fstype = "mqueue",
+        .source = "mqueue",
+        .flags = linux.MS.NOSUID | linux.MS.NODEV | linux.MS.NOEXEC,
+    },
     // Role: POSIX shared memory implementation using a RAM-backed tmpfs.
     // Critical for: High-performance IPC. AI Inference (PyTorch) and
     // Databases (PostgreSQL) use this to share data between threads at
@@ -107,7 +115,7 @@ const essential_mounts = [_]MountSpec{
 pub fn mountEssential() !void {
     // We use 'inline for' to iterate over our static 'essential_mounts' array.
     // This is "Comptime Expansion": the compiler copy-pastes the body of this loop
-    // 7 times into the final binary. This removes the "Jump" and "Counter" overhead
+    // once per mount into the final binary. This removes the "Jump" and "Counter" overhead
     // of a normal loop, making our boot process as fast as possible.
     inline for (essential_mounts) |spec| {
         // 1. Prepare the mount point.
@@ -183,5 +191,5 @@ fn errnoToError(err: linux.E) error{ PermissionDenied, NotFound, InvalidArgument
 }
 
 test "mount spec const is stable" {
-    try std.testing.expectEqual(@as(usize, 7), essential_mounts.len);
+    try std.testing.expectEqual(@as(usize, 8), essential_mounts.len);
 }
