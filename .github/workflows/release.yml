@@ -20,8 +20,6 @@ jobs:
 
     env:
       VERSION: ${{ github.ref_name }}
-      AWS_DEFAULT_REGION: eu-west-par
-      AWS_EC2_METADATA_DISABLED: "true"
 
     steps:
       - name: Checkout repository
@@ -81,19 +79,4 @@ jobs:
                 --title "scoutd ${VERSION}" \
                 --notes "Release ${VERSION} of scoutd. This release includes the static scoutd binary and a minimal bootable ext4 rootfs artifact for Firecracker guests."
             fi    
-          
-          # Upload the same immutable artifacts to the OVH bucket.
-          #
-          # OVH does not support the bucket policy flow  every upload
-          # must still set public-read explicitly.
-
-      - name: Upload release artifacts to OVH
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.OVH_S3_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.OVH_S3_SECRET_ACCESS_KEY }}
-        run: |
-          aws --endpoint-url https://s3.eu-west-par.io.cloud.ovh.net \
-            s3 cp "dist/scoutd-rootfs-${VERSION}-x86_64-ext4" \
-            "s3://spacescale-runtime-assets/scoutd-rootfs-${VERSION}-x86_64-ext4" \
-            --acl public-read  
         
